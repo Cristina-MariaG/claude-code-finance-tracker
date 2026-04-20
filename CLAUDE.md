@@ -16,10 +16,22 @@ There is no test runner configured.
 
 ## Architecture
 
-This is a **single-component React app** built with Vite (React 19, ESM, `type: "module"`). Entry point is `src/main.jsx` → `src/App.jsx`. All state, business logic, form handling, filtering, and rendering live in `App.jsx` — there are no sub-components, no router, no API, and no persistence layer. Data is seeded in-memory and lost on reload.
+A React 19 + Vite SPA (ESM, `type: "module"`). Entry point: `src/main.jsx` → `src/App.jsx`. No router, no API, no persistence — seed data lives in `App.jsx` state and is lost on reload.
 
-Lint config (`eslint.config.js`) uses the flat-config format with `@eslint/js` recommended, `eslint-plugin-react-hooks`, and `eslint-plugin-react-refresh` (Vite variant). `no-unused-vars` ignores identifiers starting with an uppercase letter or underscore.
+**Component layout (`src/`):**
+
+- **`App.jsx`** — orchestrator. Owns the single source of truth: the `transactions` state and `handleAdd`. Also defines the module-level `categories` constant passed down as a prop. Renders `Summary`, `TransactionForm`, `TransactionList`.
+- **`Summary.jsx`** — receives `transactions`, computes `totalIncome` / `totalExpenses` / `balance` internally via `filter` + `reduce`, renders the three summary cards.
+- **`TransactionForm.jsx`** — owns its own input state (`description`, `amount`, `type`, `category`). On submit, builds the transaction object (coercing `amount` via `Number()`) and invokes the `onAdd` callback prop, then resets its inputs.
+- **`TransactionList.jsx`** — owns its own filter state (`filterType`, `filterCategory`). Receives `transactions` + `categories`, filters locally, renders the table.
+
+**Data-flow invariants worth knowing:**
+
+- `transaction.amount` is a **number**, not a string — seed data uses numeric literals, and `TransactionForm` coerces the input value via `Number(amount)` before calling `onAdd`. Do not reintroduce string amounts; the `Summary` reducers rely on numeric addition.
+- `categories` is a plain module-level constant in `App.jsx`, passed explicitly as a prop to children rather than imported. If adding a new consumer, keep the single source of truth.
+
+**Lint** (`eslint.config.js`): flat config with `@eslint/js` recommended + `eslint-plugin-react-hooks` + `eslint-plugin-react-refresh` (Vite variant). `no-unused-vars` ignores identifiers starting with an uppercase letter or underscore.
 
 ## Context from README
 
-Per the README, this is a **course starter project** that "intentionally has a bug, poor UI, and messy code." Expect to find issues rather than polish — for example, `amount` is stored as a string on each transaction, so the `reduce` calls in `App.jsx` concatenate strings instead of summing numbers. Treat pre-existing "smells" as likely intentional teaching material; confirm with the user before aggressive rewrites.
+This codebase started from a public course starter described as intentionally containing "a bug, poor UI, and messy code." The initial string-amount bug has been fixed and the single `App.jsx` has been split into the components above. Further UI/UX polish and refactors are ongoing learning work — when in doubt about whether a rough edge is intentional course material vs. something to clean up, confirm with the user before broad rewrites.
